@@ -88,8 +88,8 @@ const VideoRoom: FC<VideoRoomProps> = ({ roomId, username, onLeave, onDuplicate 
   const peerStreamsRef: RefObject<Record<string, PeerStream>> = useRef({});
   const [peerStreams, setPeerStreams] = useState<Record<string, PeerStream>>({});
   const [status, setStatus] = useState<string>('연결 중...');
-  const [micOn, setMicOn] = useState<boolean>(true);
-  const [camOn, setCamOn] = useState<boolean>(true);
+  const [micOn, setMicOn] = useState<boolean>(false);
+  const [camOn, setCamOn] = useState<boolean>(false);
 
   useEffect(() => {
     let localStream: MediaStream | null = null;
@@ -144,6 +144,8 @@ const VideoRoom: FC<VideoRoomProps> = ({ roomId, username, onLeave, onDuplicate 
         return;
       }
       localStreamRef.current = localStream;
+      localStream.getAudioTracks().forEach((t) => (t.enabled = false));
+      localStream.getVideoTracks().forEach((t) => (t.enabled = false));
       if (localVideoRef.current) localVideoRef.current.srcObject = localStream;
 
       const socket: Socket = io({ path: '/socket.io' });
