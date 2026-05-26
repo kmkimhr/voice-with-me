@@ -7,3 +7,4 @@ sfu/.env
 nginx/.env
 turn/.env
 .claude/
+deploy.env

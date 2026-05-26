@@ -2,10 +2,20 @@
 set -e
 
 # ──────────────────────────────────────────────
-DOMAIN="kmkim.space"
-EMAIL="kmkim95ai@gmail.com"
-PUBLIC_IP="118.37.2.51"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+if [ ! -f "${SCRIPT_DIR}/deploy.env" ]; then
+  echo "ERROR: deploy.env not found."
+  echo "Copy deploy.env.example and fill in your values:"
+  echo "  cp deploy.env.example deploy.env"
+  exit 1
+fi
+
+source "${SCRIPT_DIR}/deploy.env"
+
+: "${DOMAIN:?DOMAIN is not set in deploy.env}"
+: "${EMAIL:?EMAIL is not set in deploy.env}"
+: "${PUBLIC_IP:?PUBLIC_IP is not set in deploy.env}"
 # ──────────────────────────────────────────────
 
 echo "=== [1/6] nginx 설치 ==="
