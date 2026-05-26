@@ -8,3 +8,5 @@ nginx/.env
 turn/.env
 .claude/
 deploy.env
+certbot/conf/
+certbot/www/
