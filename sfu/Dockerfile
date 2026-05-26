@@ -13,6 +13,8 @@ RUN npm install
 
 COPY . .
 
+RUN npm run build
+
 EXPOSE 3000
 
-CMD ["node", "server.js"]
+CMD ["node", "dist/server.js"]
