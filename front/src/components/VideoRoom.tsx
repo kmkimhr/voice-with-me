@@ -1,18 +1,65 @@
-import { useEffect, useRef, useState } from 'react';
-import { io } from 'socket.io-client';
-import { Device } from 'mediasoup-client';
+import { useEffect, useRef, useState, FC, RefObject } from 'react';
+import { Socket, io } from 'socket.io-client';
+import { Device, Transport, Producer, Consumer } from 'mediasoup-client/lib/types';
 
-function emitAsync(socket, event, data = {}) {
+interface PeerStream {
+  stream: MediaStream;
+  username: string;
+}
+
+interface RtpCapabilities {
+  [key: string]: any;
+}
+
+interface ExistingProducer {
+  producerId: string;
+  peerId: string;
+  peerUsername: string;
+}
+
+interface JoinRoomResponse {
+  error?: string;
+  rtpCapabilities?: RtpCapabilities;
+  existingProducers?: ExistingProducer[];
+}
+
+interface TransportParams {
+  id: string;
+  iceParameters: any;
+  iceCandidates: any;
+  dtlsParameters: any;
+  sctpParameters?: any;
+}
+
+interface ConsumeParams {
+  error?: string;
+  id?: string;
+  producerId?: string;
+  kind?: string;
+  rtpParameters?: any;
+}
+
+interface ProduceResponse {
+  error?: string;
+  id?: string;
+}
+
+function emitAsync(socket: Socket, event: string, data: object = {}): Promise<any> {
   return new Promise((resolve, reject) => {
-    socket.emit(event, data, (res) => {
+    socket.emit(event, data, (res: any) => {
       if (res?.error) reject(new Error(res.error));
       else resolve(res);
     });
   });
 }
 
-function RemoteVideo({ stream, label }) {
-  const ref = useRef(null);
+interface RemoteVideoProps {
+  stream: MediaStream;
+  label: string;
+}
+
+const RemoteVideo: FC<RemoteVideoProps> = ({ stream, label }) => {
+  const ref: RefObject<HTMLVideoElement> = useRef(null);
   useEffect(() => {
     if (ref.current) ref.current.srcObject = stream;
   }, [stream]);
@@ -22,37 +69,54 @@ function RemoteVideo({ stream, label }) {
       <span>{label}</span>
     </div>
   );
+};
+
+interface VideoRoomProps {
+  roomId: string;
+  username: string;
+  onLeave: () => void;
+  onDuplicate: () => void;
 }
 
-export default function VideoRoom({ roomId, username, onLeave, onDuplicate }) {
-  const localVideoRef = useRef(null);
-  const socketRef = useRef(null);
-  const deviceRef = useRef(null);
-  const sendTransportRef = useRef(null);
-  const recvTransportRef = useRef(null);
-  const localStreamRef = useRef(null);
-  const peerStreamsRef = useRef({});   // peerId → { stream, username }
-  const [peerStreams, setPeerStreams] = useState({});
-  const [status, setStatus] = useState('연결 중...');
-  const [micOn, setMicOn] = useState(true);
-  const [camOn, setCamOn] = useState(true);
+const VideoRoom: FC<VideoRoomProps> = ({ roomId, username, onLeave, onDuplicate }) => {
+  const localVideoRef: RefObject<HTMLVideoElement> = useRef(null);
+  const socketRef: RefObject<Socket | null> = useRef(null);
+  const deviceRef: RefObject<Device | null> = useRef(null);
+  const sendTransportRef: RefObject<Transport | null> = useRef(null);
+  const recvTransportRef: RefObject<Transport | null> = useRef(null);
+  const localStreamRef: RefObject<MediaStream | null> = useRef(null);
+  const peerStreamsRef: RefObject<Record<string, PeerStream>> = useRef({});
+  const [peerStreams, setPeerStreams] = useState<Record<string, PeerStream>>({});
+  const [status, setStatus] = useState<string>('연결 중...');
+  const [micOn, setMicOn] = useState<boolean>(true);
+  const [camOn, setCamOn] = useState<boolean>(true);
 
   useEffect(() => {
-    let localStream = null;
+    let localStream: MediaStream | null = null;
     let destroyed = false;
 
-    async function consumeProducer(socket, device, recvTransport, producerId, peerId, peerUsername) {
-      const res = await emitAsync(socket, 'consume', {
+    const consumeProducer = async (
+      socket: Socket,
+      device: Device,
+      recvTransport: Transport,
+      producerId: string,
+      peerId: string,
+      peerUsername: string
+    ): Promise<void> => {
+      const res: ConsumeParams = await emitAsync(socket, 'consume', {
         transportId: recvTransport.id,
         producerId,
         rtpCapabilities: device.rtpCapabilities,
       });
-      if (res.error) { console.error('consume error:', res.error); return; }
+      if (res.error) {
+        console.error('consume error:', res.error);
+        return;
+      }
 
-      const consumer = await recvTransport.consume({
-        id: res.id,
-        producerId: res.producerId,
-        kind: res.kind,
+      const consumer: Consumer = await recvTransport.consume({
+        id: res.id!,
+        producerId: res.producerId!,
+        kind: res.kind as 'audio' | 'video',
         rtpParameters: res.rtpParameters,
       });
 
@@ -61,9 +125,9 @@ export default function VideoRoom({ roomId, username, onLeave, onDuplicate }) {
       }
       peerStreamsRef.current[peerId].stream.addTrack(consumer.track);
       if (!destroyed) setPeerStreams({ ...peerStreamsRef.current });
-    }
+    };
 
-    async function init() {
+    const init = async (): Promise<void> => {
       localStream = await navigator.mediaDevices.getUserMedia({
         video: true,
         audio: {
@@ -75,18 +139,21 @@ export default function VideoRoom({ roomId, username, onLeave, onDuplicate }) {
           latency: { ideal: 0.01 },
         },
       });
-      if (destroyed) { localStream.getTracks().forEach((t) => t.stop()); return; }
+      if (destroyed) {
+        localStream.getTracks().forEach((t) => t.stop());
+        return;
+      }
       localStreamRef.current = localStream;
       if (localVideoRef.current) localVideoRef.current.srcObject = localStream;
 
-      const socket = io({ path: '/socket.io' });
+      const socket: Socket = io({ path: '/socket.io' });
       socketRef.current = socket;
 
       socket.on('connect', async () => {
         if (destroyed) return;
         setStatus('방 입장 중...');
 
-        const joinRes = await emitAsync(socket, 'joinRoom', { roomId, username });
+        const joinRes: JoinRoomResponse = await emitAsync(socket, 'joinRoom', { roomId, username });
         if (joinRes.error) {
           if (joinRes.error === 'duplicate_username') {
             onDuplicate();
@@ -96,46 +163,50 @@ export default function VideoRoom({ roomId, username, onLeave, onDuplicate }) {
 
         const { rtpCapabilities, existingProducers } = joinRes;
 
-        const device = new Device();
+        const device: Device = new (await import('mediasoup-client')).Device();
         await device.load({ routerRtpCapabilities: rtpCapabilities });
         deviceRef.current = device;
 
         // Send Transport
-        const sendParams = await emitAsync(socket, 'createTransport', {});
-        const sendTransport = device.createSendTransport(sendParams);
+        const sendParams: TransportParams = await emitAsync(socket, 'createTransport', {});
+        const sendTransport: Transport = device.createSendTransport(sendParams);
         sendTransportRef.current = sendTransport;
 
         sendTransport.on('connect', ({ dtlsParameters }, callback, errback) => {
           emitAsync(socket, 'connectTransport', { transportId: sendTransport.id, dtlsParameters })
-            .then(callback).catch(errback);
+            .then(callback)
+            .catch(errback);
         });
 
         sendTransport.on('produce', async ({ kind, rtpParameters }, callback, errback) => {
           try {
-            const { id } = await emitAsync(socket, 'produce', {
+            const { id }: ProduceResponse = await emitAsync(socket, 'produce', {
               transportId: sendTransport.id,
               kind,
               rtpParameters,
             });
             callback({ id });
-          } catch (e) { errback(e); }
+          } catch (e) {
+            errback(e);
+          }
         });
 
         // Recv Transport
-        const recvParams = await emitAsync(socket, 'createTransport', {});
-        const recvTransport = device.createRecvTransport(recvParams);
+        const recvParams: TransportParams = await emitAsync(socket, 'createTransport', {});
+        const recvTransport: Transport = device.createRecvTransport(recvParams);
         recvTransportRef.current = recvTransport;
 
         recvTransport.on('connect', ({ dtlsParameters }, callback, errback) => {
           emitAsync(socket, 'connectTransport', { transportId: recvTransport.id, dtlsParameters })
-            .then(callback).catch(errback);
+            .then(callback)
+            .catch(errback);
         });
 
-        for (const track of localStream.getTracks()) {
+        for (const track of localStream!.getTracks()) {
           await sendTransport.produce({ track });
         }
 
-        for (const { producerId, peerId, peerUsername } of existingProducers) {
+        for (const { producerId, peerId, peerUsername } of existingProducers || []) {
           await consumeProducer(socket, device, recvTransport, producerId, peerId, peerUsername);
         }
 
@@ -145,12 +216,12 @@ export default function VideoRoom({ roomId, username, onLeave, onDuplicate }) {
       socket.on('newProducer', async ({ producerId, peerId, peerUsername }) => {
         if (destroyed) return;
         await consumeProducer(
-          socketRef.current,
-          deviceRef.current,
-          recvTransportRef.current,
+          socketRef.current!,
+          deviceRef.current!,
+          recvTransportRef.current!,
           producerId,
           peerId,
-          peerUsername,
+          peerUsername
         );
       });
 
@@ -159,11 +230,13 @@ export default function VideoRoom({ roomId, username, onLeave, onDuplicate }) {
         if (!destroyed) setPeerStreams({ ...peerStreamsRef.current });
       });
 
-      socket.on('connect_error', (e) => setStatus('연결 실패: ' + e.message));
-      socket.on('disconnect', () => { if (!destroyed) setStatus('연결 끊김'); });
-    }
+      socket.on('connect_error', (e: Error) => setStatus('연결 실패: ' + e.message));
+      socket.on('disconnect', () => {
+        if (!destroyed) setStatus('연결 끊김');
+      });
+    };
 
-    init().catch((e) => {
+    init().catch((e: Error) => {
       console.error('[init] error', e);
       setStatus('오류: ' + e.message);
     });
@@ -176,9 +249,9 @@ export default function VideoRoom({ roomId, username, onLeave, onDuplicate }) {
       localStream?.getTracks().forEach((t) => t.stop());
       peerStreamsRef.current = {};
     };
-  }, [roomId, username]);
+  }, [roomId, username, onDuplicate]);
 
-  const handleLeave = () => {
+  const handleLeave = (): void => {
     sendTransportRef.current?.close();
     recvTransportRef.current?.close();
     socketRef.current?.disconnect();
@@ -186,14 +259,14 @@ export default function VideoRoom({ roomId, username, onLeave, onDuplicate }) {
     onLeave();
   };
 
-  const toggleMic = () => {
+  const toggleMic = (): void => {
     const track = localStreamRef.current?.getAudioTracks()[0];
     if (!track) return;
     track.enabled = !track.enabled;
     setMicOn(track.enabled);
   };
 
-  const toggleCam = () => {
+  const toggleCam = (): void => {
     const track = localStreamRef.current?.getVideoTracks()[0];
     if (!track) return;
     track.enabled = !track.enabled;
@@ -245,10 +318,22 @@ export default function VideoRoom({ roomId, username, onLeave, onDuplicate }) {
         </div>
       </div>
       {status && (
-        <div style={{ position: 'fixed', bottom: 16, left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.7)', padding: '8px 16px', borderRadius: 8 }}>
+        <div
+          style={{
+            position: 'fixed',
+            bottom: 16,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'rgba(0,0,0,0.7)',
+            padding: '8px 16px',
+            borderRadius: 8,
+          }}
+        >
           {status}
         </div>
       )}
     </div>
   );
-}
+};
+
+export default VideoRoom;

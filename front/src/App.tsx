@@ -1,26 +1,32 @@
-import { useState } from 'react';
+import { useState, FC } from 'react';
 import VideoRoom from './components/VideoRoom';
 
-export default function App() {
-  const [roomInput, setRoomInput] = useState('test');
-  const [username, setUsername] = useState('');
-  const [joined, setJoined] = useState(false);
-  const [error, setError] = useState('');
+const App: FC = () => {
+  const [roomInput, setRoomInput] = useState<string>('test');
+  const [username, setUsername] = useState<string>('');
+  const [joined, setJoined] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
 
-  const handleJoin = () => {
-    if (!roomInput.trim()) { setError('방 이름을 입력해주세요.'); return; }
-    if (!username.trim()) { setError('이름을 입력해주세요.'); return; }
+  const handleJoin = (): void => {
+    if (!roomInput.trim()) {
+      setError('방 이름을 입력해주세요.');
+      return;
+    }
+    if (!username.trim()) {
+      setError('이름을 입력해주세요.');
+      return;
+    }
     setError('');
     setJoined(true);
   };
 
-  const handleLeave = () => {
+  const handleLeave = (): void => {
     setJoined(false);
     setUsername('');
     setError('');
   };
 
-  const handleDuplicateError = () => {
+  const handleDuplicateError = (): void => {
     setJoined(false);
     setError('이미 존재하는 유저 이름입니다.');
   };
@@ -50,7 +56,10 @@ export default function App() {
           type="text"
           placeholder="이름 입력"
           value={username}
-          onChange={(e) => { setUsername(e.target.value); setError(''); }}
+          onChange={(e) => {
+            setUsername(e.target.value);
+            setError('');
+          }}
           onKeyDown={(e) => e.key === 'Enter' && handleJoin()}
           autoFocus
         />
@@ -59,4 +68,6 @@ export default function App() {
       </div>
     </div>
   );
-}
+};
+
+export default App;
