@@ -1,5 +1,5 @@
 {
-  "name": "front",
+  "name": "voice-with-me",
   "version": "1.0.0",
   "scripts": {
     "dev": "vite",

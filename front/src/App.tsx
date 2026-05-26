@@ -45,7 +45,7 @@ const App: FC = () => {
   return (
     <div className="join-page">
       <div className="join-card">
-        <h1>Video Chat</h1>
+        <h1>Voice With Me</h1>
         <input
           type="text"
           placeholder="방 ID 입력"
