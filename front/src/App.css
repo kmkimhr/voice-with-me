@@ -321,6 +321,32 @@ button:hover {
   border-color: #4fc3f7;
 }
 
+.settings-group select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.device-loading-track {
+  margin-top: 8px;
+  height: 4px;
+  background: #2a3a5c;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.device-loading-bar {
+  height: 100%;
+  width: 0%;
+  background: #4fc3f7;
+  border-radius: 2px;
+  animation: device-load 2s linear forwards;
+}
+
+@keyframes device-load {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+
 /* Room Main */
 .room-main {
   flex: 1;

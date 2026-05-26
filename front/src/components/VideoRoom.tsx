@@ -88,6 +88,8 @@ const VideoRoom: FC<VideoRoomProps> = ({ roomId, username, onLeave, onDuplicate 
   const audioProducerRef: RefObject<Producer | null> = useRef(null);
   const videoProducerRef: RefObject<Producer | null> = useRef(null);
   const peerStreamsRef: RefObject<Record<string, PeerStream>> = useRef({});
+  const micOnRef = useRef<boolean>(false);
+  const camOnRef = useRef<boolean>(false);
   const [peerStreams, setPeerStreams] = useState<Record<string, PeerStream>>({});
   const [status, setStatus] = useState<string>('연결 중...');
   const [micOn, setMicOn] = useState<boolean>(false);
@@ -97,6 +99,7 @@ const VideoRoom: FC<VideoRoomProps> = ({ roomId, username, onLeave, onDuplicate 
   const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedAudioId, setSelectedAudioId] = useState<string>('');
   const [selectedVideoId, setSelectedVideoId] = useState<string>('');
+  const [deviceSwitching, setDeviceSwitching] = useState<'audio' | 'video' | null>(null);
 
   useEffect(() => {
     let localStream: MediaStream | null = null;
@@ -273,15 +276,24 @@ const VideoRoom: FC<VideoRoomProps> = ({ roomId, username, onLeave, onDuplicate 
   const toggleMic = (): void => {
     const track = localStreamRef.current?.getAudioTracks()[0];
     if (!track) return;
-    track.enabled = !track.enabled;
-    setMicOn(track.enabled);
+    const next = !micOnRef.current;
+    track.enabled = next;
+    // producer의 _paused 상태를 함께 동기화 (replaceTrack이 _paused 기준으로 enabled를 덮어씀)
+    if (next) audioProducerRef.current?.resume();
+    else audioProducerRef.current?.pause();
+    micOnRef.current = next;
+    setMicOn(next);
   };
 
   const toggleCam = (): void => {
     const track = localStreamRef.current?.getVideoTracks()[0];
     if (!track) return;
-    track.enabled = !track.enabled;
-    setCamOn(track.enabled);
+    const next = !camOnRef.current;
+    track.enabled = next;
+    if (next) videoProducerRef.current?.resume();
+    else videoProducerRef.current?.pause();
+    camOnRef.current = next;
+    setCamOn(next);
   };
 
   const openSettings = async (): Promise<void> => {
@@ -295,47 +307,66 @@ const VideoRoom: FC<VideoRoomProps> = ({ roomId, username, onLeave, onDuplicate 
 
   const switchAudioDevice = async (deviceId: string): Promise<void> => {
     setSelectedAudioId(deviceId);
+    setDeviceSwitching('audio');
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          deviceId: { exact: deviceId },
-          echoCancellation: { ideal: true },
-          noiseSuppression: { ideal: true },
-          autoGainControl: { ideal: true },
-        },
-      });
+      const [stream] = await Promise.all([
+        navigator.mediaDevices.getUserMedia({
+          audio: {
+            deviceId: { exact: deviceId },
+            echoCancellation: { ideal: true },
+            noiseSuppression: { ideal: true },
+            autoGainControl: { ideal: true },
+          },
+        }),
+        new Promise<void>((r) => setTimeout(r, 2000)),
+      ]);
       const newTrack = stream.getAudioTracks()[0];
-      newTrack.enabled = micOn;
       const oldTrack = localStreamRef.current?.getAudioTracks()[0];
       if (oldTrack) {
         localStreamRef.current?.removeTrack(oldTrack);
         oldTrack.stop();
       }
       localStreamRef.current?.addTrack(newTrack);
+      // replaceTrack이 producer의 _paused 기준으로 enabled를 덮어쓰므로, 호출 후 토글 상태로 다시 맞춤
       if (audioProducerRef.current) await audioProducerRef.current.replaceTrack({ track: newTrack });
+      newTrack.enabled = micOnRef.current;
     } catch (e) {
       console.error('switchAudioDevice error', e);
+    } finally {
+      setDeviceSwitching(null);
     }
   };
 
   const switchVideoDevice = async (deviceId: string): Promise<void> => {
     setSelectedVideoId(deviceId);
+    setDeviceSwitching('video');
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { deviceId: { exact: deviceId } },
-      });
+      const [stream] = await Promise.all([
+        navigator.mediaDevices.getUserMedia({
+          video: { deviceId: { exact: deviceId } },
+        }),
+        new Promise<void>((r) => setTimeout(r, 2000)),
+      ]);
       const newTrack = stream.getVideoTracks()[0];
-      newTrack.enabled = camOn;
       const oldTrack = localStreamRef.current?.getVideoTracks()[0];
       if (oldTrack) {
         localStreamRef.current?.removeTrack(oldTrack);
         oldTrack.stop();
       }
       localStreamRef.current?.addTrack(newTrack);
-      if (localVideoRef.current) localVideoRef.current.srcObject = localStreamRef.current;
+      // replaceTrack이 producer의 _paused 기준으로 enabled를 덮어쓰므로, 호출 후 토글 상태로 다시 맞춤
       if (videoProducerRef.current) await videoProducerRef.current.replaceTrack({ track: newTrack });
+      newTrack.enabled = camOnRef.current;
+      if (localVideoRef.current) {
+        // null로 초기화 후 재할당해야 브라우저가 트랙 교체를 감지함
+        localVideoRef.current.srcObject = null;
+        localVideoRef.current.srcObject = localStreamRef.current;
+        await localVideoRef.current.play().catch(() => {});
+      }
     } catch (e) {
       console.error('switchVideoDevice error', e);
+    } finally {
+      setDeviceSwitching(null);
     }
   };
 
@@ -401,23 +432,41 @@ const VideoRoom: FC<VideoRoomProps> = ({ roomId, username, onLeave, onDuplicate 
             <div className="settings-body">
               <div className="settings-group">
                 <label>마이크</label>
-                <select value={selectedAudioId} onChange={(e) => switchAudioDevice(e.target.value)}>
+                <select
+                  value={selectedAudioId}
+                  onChange={(e) => switchAudioDevice(e.target.value)}
+                  disabled={deviceSwitching !== null}
+                >
                   {audioDevices.map((d) => (
                     <option key={d.deviceId} value={d.deviceId}>
                       {d.label || `마이크 ${d.deviceId.slice(0, 8)}`}
                     </option>
                   ))}
                 </select>
+                {deviceSwitching === 'audio' && (
+                  <div className="device-loading-track">
+                    <div className="device-loading-bar" />
+                  </div>
+                )}
               </div>
               <div className="settings-group">
                 <label>카메라</label>
-                <select value={selectedVideoId} onChange={(e) => switchVideoDevice(e.target.value)}>
+                <select
+                  value={selectedVideoId}
+                  onChange={(e) => switchVideoDevice(e.target.value)}
+                  disabled={deviceSwitching !== null}
+                >
                   {videoDevices.map((d) => (
                     <option key={d.deviceId} value={d.deviceId}>
                       {d.label || `카메라 ${d.deviceId.slice(0, 8)}`}
                     </option>
                   ))}
                 </select>
+                {deviceSwitching === 'video' && (
+                  <div className="device-loading-track">
+                    <div className="device-loading-bar" />
+                  </div>
+                )}
               </div>
             </div>
           </div>
