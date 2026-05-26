@@ -85,11 +85,18 @@ const VideoRoom: FC<VideoRoomProps> = ({ roomId, username, onLeave, onDuplicate 
   const sendTransportRef: RefObject<Transport | null> = useRef(null);
   const recvTransportRef: RefObject<Transport | null> = useRef(null);
   const localStreamRef: RefObject<MediaStream | null> = useRef(null);
+  const audioProducerRef: RefObject<Producer | null> = useRef(null);
+  const videoProducerRef: RefObject<Producer | null> = useRef(null);
   const peerStreamsRef: RefObject<Record<string, PeerStream>> = useRef({});
   const [peerStreams, setPeerStreams] = useState<Record<string, PeerStream>>({});
   const [status, setStatus] = useState<string>('연결 중...');
   const [micOn, setMicOn] = useState<boolean>(false);
   const [camOn, setCamOn] = useState<boolean>(false);
+  const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
+  const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
+  const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
+  const [selectedAudioId, setSelectedAudioId] = useState<string>('');
+  const [selectedVideoId, setSelectedVideoId] = useState<string>('');
 
   useEffect(() => {
     let localStream: MediaStream | null = null;
@@ -205,7 +212,9 @@ const VideoRoom: FC<VideoRoomProps> = ({ roomId, username, onLeave, onDuplicate 
         });
 
         for (const track of localStream!.getTracks()) {
-          await sendTransport.produce({ track });
+          const producer = await sendTransport.produce({ track });
+          if (track.kind === 'audio') audioProducerRef.current = producer;
+          else videoProducerRef.current = producer;
         }
 
         for (const { producerId, peerId, peerUsername } of existingProducers || []) {
@@ -275,6 +284,61 @@ const VideoRoom: FC<VideoRoomProps> = ({ roomId, username, onLeave, onDuplicate 
     setCamOn(track.enabled);
   };
 
+  const openSettings = async (): Promise<void> => {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    setAudioDevices(devices.filter((d) => d.kind === 'audioinput'));
+    setVideoDevices(devices.filter((d) => d.kind === 'videoinput'));
+    setSelectedAudioId(localStreamRef.current?.getAudioTracks()[0]?.getSettings().deviceId ?? '');
+    setSelectedVideoId(localStreamRef.current?.getVideoTracks()[0]?.getSettings().deviceId ?? '');
+    setSettingsOpen(true);
+  };
+
+  const switchAudioDevice = async (deviceId: string): Promise<void> => {
+    setSelectedAudioId(deviceId);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          deviceId: { exact: deviceId },
+          echoCancellation: { ideal: true },
+          noiseSuppression: { ideal: true },
+          autoGainControl: { ideal: true },
+        },
+      });
+      const newTrack = stream.getAudioTracks()[0];
+      newTrack.enabled = micOn;
+      const oldTrack = localStreamRef.current?.getAudioTracks()[0];
+      if (oldTrack) {
+        localStreamRef.current?.removeTrack(oldTrack);
+        oldTrack.stop();
+      }
+      localStreamRef.current?.addTrack(newTrack);
+      if (audioProducerRef.current) await audioProducerRef.current.replaceTrack({ track: newTrack });
+    } catch (e) {
+      console.error('switchAudioDevice error', e);
+    }
+  };
+
+  const switchVideoDevice = async (deviceId: string): Promise<void> => {
+    setSelectedVideoId(deviceId);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { deviceId: { exact: deviceId } },
+      });
+      const newTrack = stream.getVideoTracks()[0];
+      newTrack.enabled = camOn;
+      const oldTrack = localStreamRef.current?.getVideoTracks()[0];
+      if (oldTrack) {
+        localStreamRef.current?.removeTrack(oldTrack);
+        oldTrack.stop();
+      }
+      localStreamRef.current?.addTrack(newTrack);
+      if (localVideoRef.current) localVideoRef.current.srcObject = localStreamRef.current;
+      if (videoProducerRef.current) await videoProducerRef.current.replaceTrack({ track: newTrack });
+    } catch (e) {
+      console.error('switchVideoDevice error', e);
+    }
+  };
+
   return (
     <div className="video-room">
       <div className="room-sidebar">
@@ -295,19 +359,26 @@ const VideoRoom: FC<VideoRoomProps> = ({ roomId, username, onLeave, onDuplicate 
           </ul>
         </div>
         <div className="controls-section">
-          <button className={`ctrl-btn sidebar ${micOn ? '' : 'off'}`} onClick={toggleMic}>
-            {micOn ? '🎙' : '🔇'}
-            <span className="tooltip">{micOn ? '마이크 끄기' : '마이크 켜기'}</span>
-          </button>
-          <button className={`ctrl-btn sidebar ${camOn ? '' : 'off'}`} onClick={toggleCam}>
-            {camOn ? '📷' : '🚫'}
-            <span className="tooltip">{camOn ? '카메라 끄기' : '카메라 켜기'}</span>
-          </button>
+          <div className="controls-row">
+            <button className={`ctrl-btn sidebar ${micOn ? '' : 'off'}`} onClick={toggleMic}>
+              {micOn ? '🎙' : '🔇'}
+              <span className="tooltip">{micOn ? '마이크 끄기' : '마이크 켜기'}</span>
+            </button>
+            <button className={`ctrl-btn sidebar ${camOn ? '' : 'off'}`} onClick={toggleCam}>
+              {camOn ? '📷' : '🚫'}
+              <span className="tooltip">{camOn ? '카메라 끄기' : '카메라 켜기'}</span>
+            </button>
+            <button className="ctrl-btn sidebar" onClick={openSettings}>
+              ⚙️
+              <span className="tooltip">설정</span>
+            </button>
+          </div>
           <button className="leave-btn" onClick={handleLeave}>
-            ✕<span className="tooltip">퇴장</span>
+            ✕ 퇴장
           </button>
         </div>
       </div>
+
       <div className="room-main">
         <div className="video-grid">
           <div className="video-block local">
@@ -319,6 +390,40 @@ const VideoRoom: FC<VideoRoomProps> = ({ roomId, username, onLeave, onDuplicate 
           ))}
         </div>
       </div>
+
+      {settingsOpen && (
+        <div className="settings-overlay" onClick={() => setSettingsOpen(false)}>
+          <div className="settings-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="settings-header">
+              <h2>장치 설정</h2>
+              <button className="settings-close" onClick={() => setSettingsOpen(false)}>✕</button>
+            </div>
+            <div className="settings-body">
+              <div className="settings-group">
+                <label>마이크</label>
+                <select value={selectedAudioId} onChange={(e) => switchAudioDevice(e.target.value)}>
+                  {audioDevices.map((d) => (
+                    <option key={d.deviceId} value={d.deviceId}>
+                      {d.label || `마이크 ${d.deviceId.slice(0, 8)}`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="settings-group">
+                <label>카메라</label>
+                <select value={selectedVideoId} onChange={(e) => switchVideoDevice(e.target.value)}>
+                  {videoDevices.map((d) => (
+                    <option key={d.deviceId} value={d.deviceId}>
+                      {d.label || `카메라 ${d.deviceId.slice(0, 8)}`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {status && (
         <div
           style={{
