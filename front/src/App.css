@@ -324,68 +324,79 @@ button:hover {
     overflow-x: hidden;
   }
 
-  /* 모바일: 사이드바 최소화 */
+  /* 모바일: 사이드바 4, 메인 6 비율 */
+  .video-room {
+    flex-direction: row;
+  }
+
   .room-sidebar {
-    width: 60px;
-    padding: 6px 3px;
+    flex: 0 0 40%;
+    width: 40%;
+    padding: 8px 6px;
     flex-shrink: 0;
   }
 
+  .room-main {
+    flex: 0 0 60%;
+    width: 60%;
+    min-width: 0;
+  }
+
   .users-section {
-    padding: 6px 3px;
+    padding: 8px 6px;
     overflow-y: auto;
   }
 
   .users-section h3 {
-    font-size: 0.6rem;
-    margin-bottom: 6px;
+    font-size: 0.75rem;
+    margin-bottom: 8px;
     white-space: nowrap;
   }
 
   .user-item {
-    padding: 4px 3px;
-    margin-bottom: 2px;
-    font-size: 0.7rem;
+    padding: 6px 8px;
+    margin-bottom: 3px;
+    font-size: 0.8rem;
     flex-wrap: nowrap;
   }
 
   .user-name {
-    display: none;
+    display: block;
   }
 
   .user-badge {
-    padding: 1px 2px;
-    font-size: 0.55rem;
-    flex-shrink: 0;
-  }
-
-  .status-icon {
+    padding: 1px 4px;
     font-size: 0.65rem;
     flex-shrink: 0;
   }
 
+  .status-icon {
+    font-size: 0.75rem;
+    flex-shrink: 0;
+  }
+
   .controls-section {
-    gap: 3px;
-    padding: 6px 3px;
-    flex-direction: column;
+    gap: 4px;
+    padding: 8px 6px 28px;
+    flex-direction: row;
   }
 
   .ctrl-btn.sidebar,
   .leave-btn {
-    padding: 6px 3px;
-    font-size: 0.95rem;
-    border-radius: 4px;
+    padding: 8px 4px;
+    font-size: 1rem;
+    border-radius: 6px;
     min-width: 0;
   }
 
   .tooltip {
-    font-size: 0.55rem;
+    font-size: 0.6rem;
     padding: 3px 5px;
   }
 
-  /* 비디오 그리드: 모바일에서는 2열 */
+  /* 비디오 그리드: 모바일에서는 1열 */
   .video-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(1, 1fr);
     gap: 4px;
     padding: 4px;
     overflow-x: hidden;
@@ -393,15 +404,15 @@ button:hover {
   }
 
   .video-block {
-    aspect-ratio: auto;
-    height: 140px;
+    aspect-ratio: 16/9;
+    height: auto;
     max-width: 100%;
     min-width: 0;
   }
 
   .video-block span {
-    font-size: 0.55rem;
-    padding: 1px 3px;
+    font-size: 0.65rem;
+    padding: 2px 6px;
   }
 
   /* Join page mobile */
@@ -465,44 +476,56 @@ button:hover {
   }
 
   .room-sidebar {
-    width: 55px;
-    padding: 5px 2px;
+    flex: 0 0 40%;
+    width: 40%;
+    padding: 6px 4px;
     flex-shrink: 0;
   }
 
+  .room-main {
+    flex: 0 0 60%;
+    width: 60%;
+    min-width: 0;
+  }
+
   .users-section {
-    padding: 5px 2px;
+    padding: 6px 4px;
   }
 
   .users-section h3 {
-    font-size: 0.55rem;
-    margin-bottom: 5px;
+    font-size: 0.65rem;
+    margin-bottom: 6px;
   }
 
   .user-item {
-    padding: 3px 2px;
-    margin-bottom: 1px;
-    font-size: 0.65rem;
+    padding: 4px 6px;
+    margin-bottom: 2px;
+    font-size: 0.72rem;
+  }
+
+  .user-name {
+    display: block;
   }
 
   .user-badge {
-    font-size: 0.5rem;
-    padding: 1px 2px;
+    font-size: 0.55rem;
+    padding: 1px 3px;
   }
 
   .controls-section {
-    gap: 2px;
-    padding: 5px 2px;
+    gap: 3px;
+    padding: 6px 4px 24px;
+    flex-direction: row;
   }
 
   .ctrl-btn.sidebar,
   .leave-btn {
-    padding: 5px 2px;
+    padding: 6px 3px;
     font-size: 0.9rem;
   }
 
   .video-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(1, 1fr);
     gap: 3px;
     padding: 3px;
     overflow-x: hidden;
@@ -510,8 +533,8 @@ button:hover {
   }
 
   .video-block {
-    aspect-ratio: auto;
-    height: 120px;
+    aspect-ratio: 16/9;
+    height: auto;
     max-width: 100%;
     min-width: 0;
   }
@@ -560,18 +583,24 @@ button:hover {
 /* ===== 가로 모드 조정 ===== */
 @media (max-width: 768px) and (orientation: landscape) {
   .room-sidebar {
-    width: 80px;
+    flex: 0 0 40%;
+    width: 40%;
+  }
+
+  .room-main {
+    flex: 0 0 60%;
+    width: 60%;
   }
 
   .video-grid {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 6px;
     padding: 6px;
   }
 
   .video-block {
-    aspect-ratio: auto;
-    min-height: 180px;
+    aspect-ratio: 16/9;
+    height: auto;
   }
 
   .user-list {
