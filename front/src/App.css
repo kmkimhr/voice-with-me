@@ -231,6 +231,7 @@ button:hover {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-height: 0;
 }
 
 /* Video Grid */
@@ -305,25 +306,37 @@ button:hover {
 
 /* ===== 모바일 반응형 (768px 이하) ===== */
 @media (max-width: 768px) {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    overflow-x: hidden;
+  }
+
   /* 모바일: 사이드바 최소화 */
   .room-sidebar {
-    width: 70px;
-    padding: 8px 4px;
+    width: 60px;
+    padding: 6px 3px;
+    flex-shrink: 0;
   }
 
   .users-section {
-    padding: 8px 4px;
+    padding: 6px 3px;
+    overflow-y: auto;
   }
 
   .users-section h3 {
-    font-size: 0.65rem;
-    margin-bottom: 8px;
+    font-size: 0.6rem;
+    margin-bottom: 6px;
+    white-space: nowrap;
   }
 
   .user-item {
-    padding: 6px 4px;
+    padding: 4px 3px;
     margin-bottom: 2px;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
+    flex-wrap: nowrap;
   }
 
   .user-name {
@@ -331,59 +344,65 @@ button:hover {
   }
 
   .user-badge {
-    padding: 1px 3px;
-    font-size: 0.6rem;
+    padding: 1px 2px;
+    font-size: 0.55rem;
+    flex-shrink: 0;
   }
 
   .status-icon {
-    font-size: 0.7rem;
+    font-size: 0.65rem;
+    flex-shrink: 0;
   }
 
   .controls-section {
-    gap: 4px;
-    padding: 8px 4px;
+    gap: 3px;
+    padding: 6px 3px;
     flex-direction: column;
   }
 
   .ctrl-btn.sidebar,
   .leave-btn {
-    padding: 8px 4px;
-    font-size: 1rem;
+    padding: 6px 3px;
+    font-size: 0.95rem;
     border-radius: 4px;
+    min-width: 0;
   }
 
   .tooltip {
-    font-size: 0.6rem;
-    padding: 4px 6px;
+    font-size: 0.55rem;
+    padding: 3px 5px;
   }
 
-  /* 비디오 그리드: 모바일에서는 1열 */
+  /* 비디오 그리드: 모바일에서는 1열, 작은 타일 */
   .video-grid {
     grid-template-columns: 1fr;
-    gap: 8px;
-    padding: 8px;
+    gap: 3px;
+    padding: 3px;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .video-block {
-    aspect-ratio: 16/9;
+    aspect-ratio: auto;
+    height: 120px;
+    max-width: 100%;
+    min-width: 0;
   }
 
   .video-block span {
-    font-size: 0.65rem;
-    padding: 1px 6px;
+    font-size: 0.55rem;
+    padding: 1px 3px;
   }
-}
 
-/* ===== 소형 모바일 (480px 이하) ===== */
-@media (max-width: 480px) {
-  body {
-    font-size: 14px;
+  /* Join page mobile */
+  .join-page {
+    padding: 16px;
   }
 
   .join-card {
-    padding: 24px 16px;
     min-width: 100%;
-    max-width: calc(100vw - 16px);
+    max-width: calc(100vw - 32px);
+    padding: 24px 16px;
   }
 
   .join-card h1 {
@@ -392,54 +411,104 @@ button:hover {
 
   .join-card input,
   .join-card button {
+    width: 100%;
+    font-size: 16px;
+  }
+}
+
+/* ===== 소형 모바일 (480px 이하) ===== */
+@media (max-width: 480px) {
+  * {
+    box-sizing: border-box;
+  }
+
+  html, body {
+    width: 100%;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-size: 13px;
+  }
+
+  .join-page {
     padding: 12px;
-    font-size: 1rem;
+  }
+
+  .join-card {
+    padding: 20px 12px;
+    min-width: 100%;
+    max-width: 100vw;
+  }
+
+  .join-card h1 {
+    font-size: 1.3rem;
+  }
+
+  .join-card input,
+  .join-card button {
+    padding: 12px;
+    font-size: 15px;
+    width: 100%;
   }
 
   .room-sidebar {
-    width: 60px;
-    padding: 6px 3px;
+    width: 55px;
+    padding: 5px 2px;
+    flex-shrink: 0;
   }
 
   .users-section {
-    padding: 6px 3px;
+    padding: 5px 2px;
   }
 
   .users-section h3 {
-    font-size: 0.6rem;
-    margin-bottom: 6px;
+    font-size: 0.55rem;
+    margin-bottom: 5px;
   }
 
   .user-item {
-    padding: 4px 3px;
+    padding: 3px 2px;
     margin-bottom: 1px;
-    font-size: 0.6rem;
+    font-size: 0.65rem;
+  }
+
+  .user-badge {
+    font-size: 0.5rem;
+    padding: 1px 2px;
   }
 
   .controls-section {
-    gap: 3px;
-    padding: 6px 3px;
+    gap: 2px;
+    padding: 5px 2px;
   }
 
   .ctrl-btn.sidebar,
   .leave-btn {
-    padding: 6px 3px;
+    padding: 5px 2px;
     font-size: 0.9rem;
   }
 
   .video-grid {
     grid-template-columns: 1fr;
-    gap: 6px;
-    padding: 6px;
+    gap: 2px;
+    padding: 2px;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .video-block {
-    min-height: 200px;
+    aspect-ratio: auto;
+    height: 100px;
+    max-width: 100%;
+    min-width: 0;
   }
 
   .video-block span {
-    font-size: 0.6rem;
-    padding: 1px 4px;
+    font-size: 0.5rem;
+    padding: 1px 2px;
   }
 }
 
