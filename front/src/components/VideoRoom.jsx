@@ -202,26 +202,47 @@ export default function VideoRoom({ roomId, username, onLeave, onDuplicate }) {
 
   return (
     <div className="video-room">
-      <div className="room-header">
-        <h2>방: {roomId} · <span style={{ color: '#81d4fa' }}>{username}</span></h2>
-        <div className="controls">
-          <button className={`ctrl-btn ${micOn ? '' : 'off'}`} onClick={toggleMic}>
-            {micOn ? '🎙 마이크 끄기' : '🔇 마이크 켜기'}
+      <div className="room-sidebar">
+        <div className="users-section">
+          <h3>현재 참석중인 유저</h3>
+          <ul className="user-list">
+            <li className="user-item">
+              <span className="user-name">{username}</span>
+              <span className="user-badge">나</span>
+              {!micOn && <span className="status-icon">🔇</span>}
+              {!camOn && <span className="status-icon">🚫</span>}
+            </li>
+            {Object.entries(peerStreams).map(([peerId, { username: peerName }]) => (
+              <li key={peerId} className="user-item">
+                <span className="user-name">{peerName}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="controls-section">
+          <button className={`ctrl-btn sidebar ${micOn ? '' : 'off'}`} onClick={toggleMic}>
+            {micOn ? '🎙' : '🔇'}
+            <span className="tooltip">{micOn ? '마이크 끄기' : '마이크 켜기'}</span>
           </button>
-          <button className={`ctrl-btn ${camOn ? '' : 'off'}`} onClick={toggleCam}>
-            {camOn ? '📷 카메라 끄기' : '🚫 카메라 켜기'}
+          <button className={`ctrl-btn sidebar ${camOn ? '' : 'off'}`} onClick={toggleCam}>
+            {camOn ? '📷' : '🚫'}
+            <span className="tooltip">{camOn ? '카메라 끄기' : '카메라 켜기'}</span>
           </button>
-          <button className="leave-btn" onClick={handleLeave}>퇴장</button>
+          <button className="leave-btn" onClick={handleLeave}>
+            ✕<span className="tooltip">퇴장</span>
+          </button>
         </div>
       </div>
-      <div className="video-grid">
-        <div className="video-block local">
-          <video ref={localVideoRef} autoPlay muted playsInline />
-          <span>{username} (나) {!micOn && '🔇'}{!camOn && '🚫'}</span>
+      <div className="room-main">
+        <div className="video-grid">
+          <div className="video-block local">
+            <video ref={localVideoRef} autoPlay muted playsInline />
+            <span>{username} (나) {!micOn && '🔇'}{!camOn && '🚫'}</span>
+          </div>
+          {Object.entries(peerStreams).map(([peerId, { stream, username: peerName }]) => (
+            <RemoteVideo key={peerId} stream={stream} label={peerName} />
+          ))}
         </div>
-        {Object.entries(peerStreams).map(([peerId, { stream, username: peerName }]) => (
-          <RemoteVideo key={peerId} stream={stream} label={peerName} />
-        ))}
       </div>
       {status && (
         <div style={{ position: 'fixed', bottom: 16, left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.7)', padding: '8px 16px', borderRadius: 8 }}>

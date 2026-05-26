@@ -77,54 +77,160 @@ button:hover {
 /* Video Room */
 .video-room {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   height: 100vh;
+  gap: 0;
 }
 
-.room-header {
+/* Room Sidebar */
+.room-sidebar {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 24px;
-  background: #16213e;
-  border-bottom: 1px solid #2a3a5c;
-}
-
-.room-header h2 {
-  color: #4fc3f7;
-  font-size: 1.1rem;
-}
-
-.controls {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.ctrl-btn {
+  flex-direction: column;
+  width: 240px;
   background: #2a3a5c;
+  border-right: 1px solid #1a2a4c;
+  overflow: hidden;
+}
+
+.users-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 12px;
+  overflow: hidden;
+}
+
+.users-section h3 {
+  font-size: 0.9rem;
+  color: #90a4ae;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  padding: 0 8px;
+  font-weight: 600;
+}
+
+.user-list {
+  list-style: none;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.user-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin-bottom: 4px;
+  border-radius: 6px;
+  background: rgba(79, 195, 247, 0.05);
+  font-size: 0.9rem;
   color: #e0e0e0;
-  padding: 8px 16px;
+}
+
+.user-item:hover {
+  background: rgba(79, 195, 247, 0.1);
+}
+
+.user-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-badge {
+  background: #4fc3f7;
+  color: #1a1a2e;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.status-icon {
   font-size: 0.85rem;
 }
 
-.ctrl-btn:hover {
-  background: #3a4f7a;
+.controls-section {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid #1a2a4c;
 }
 
-.ctrl-btn.off {
-  background: #555;
-  color: #aaa;
+.ctrl-btn.sidebar {
+  flex: 1;
+  position: relative;
+  background: #16213e;
+  color: #e0e0e0;
+  padding: 10px;
+  font-size: 1.1rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ctrl-btn.sidebar:hover {
+  background: #1a2a4c;
+}
+
+.ctrl-btn.sidebar.off {
+  background: #3a4050;
+  color: #999;
+}
+
+.ctrl-btn.sidebar.off:hover {
+  background: #4a5060;
+}
+
+.tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.9);
+  color: #e0e0e0;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+  margin-bottom: 8px;
+}
+
+.ctrl-btn.sidebar:hover .tooltip {
+  opacity: 1;
 }
 
 .leave-btn {
   background: #ef5350;
   color: #fff;
-  padding: 8px 20px;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background 0.2s;
 }
 
 .leave-btn:hover {
   background: #e53935;
+}
+
+.leave-btn .tooltip {
+  display: block;
+}
+
+/* Room Main */
+.room-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 /* Video Grid */
@@ -173,4 +279,26 @@ button:hover {
   height: 100%;
   color: #90a4ae;
   font-size: 0.85rem;
+}
+
+/* Scrollbar styling */
+.user-list::-webkit-scrollbar,
+.video-grid::-webkit-scrollbar {
+  width: 6px;
+}
+
+.user-list::-webkit-scrollbar-track,
+.video-grid::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.user-list::-webkit-scrollbar-thumb,
+.video-grid::-webkit-scrollbar-thumb {
+  background: #4fc3f7;
+  border-radius: 3px;
+}
+
+.user-list::-webkit-scrollbar-thumb:hover,
+.video-grid::-webkit-scrollbar-thumb:hover {
+  background: #81d4fa;
 }
