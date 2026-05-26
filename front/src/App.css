@@ -302,3 +302,200 @@ button:hover {
 .video-grid::-webkit-scrollbar-thumb:hover {
   background: #81d4fa;
 }
+
+/* ===== 모바일 반응형 (768px 이하) ===== */
+@media (max-width: 768px) {
+  /* 모바일: 사이드바 최소화 */
+  .room-sidebar {
+    width: 70px;
+    padding: 8px 4px;
+  }
+
+  .users-section {
+    padding: 8px 4px;
+  }
+
+  .users-section h3 {
+    font-size: 0.65rem;
+    margin-bottom: 8px;
+  }
+
+  .user-item {
+    padding: 6px 4px;
+    margin-bottom: 2px;
+    font-size: 0.75rem;
+  }
+
+  .user-name {
+    display: none;
+  }
+
+  .user-badge {
+    padding: 1px 3px;
+    font-size: 0.6rem;
+  }
+
+  .status-icon {
+    font-size: 0.7rem;
+  }
+
+  .controls-section {
+    gap: 4px;
+    padding: 8px 4px;
+    flex-direction: column;
+  }
+
+  .ctrl-btn.sidebar,
+  .leave-btn {
+    padding: 8px 4px;
+    font-size: 1rem;
+    border-radius: 4px;
+  }
+
+  .tooltip {
+    font-size: 0.6rem;
+    padding: 4px 6px;
+  }
+
+  /* 비디오 그리드: 모바일에서는 1열 */
+  .video-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .video-block {
+    aspect-ratio: 16/9;
+  }
+
+  .video-block span {
+    font-size: 0.65rem;
+    padding: 1px 6px;
+  }
+}
+
+/* ===== 소형 모바일 (480px 이하) ===== */
+@media (max-width: 480px) {
+  body {
+    font-size: 14px;
+  }
+
+  .join-card {
+    padding: 24px 16px;
+    min-width: 100%;
+    max-width: calc(100vw - 16px);
+  }
+
+  .join-card h1 {
+    font-size: 1.5rem;
+  }
+
+  .join-card input,
+  .join-card button {
+    padding: 12px;
+    font-size: 1rem;
+  }
+
+  .room-sidebar {
+    width: 60px;
+    padding: 6px 3px;
+  }
+
+  .users-section {
+    padding: 6px 3px;
+  }
+
+  .users-section h3 {
+    font-size: 0.6rem;
+    margin-bottom: 6px;
+  }
+
+  .user-item {
+    padding: 4px 3px;
+    margin-bottom: 1px;
+    font-size: 0.6rem;
+  }
+
+  .controls-section {
+    gap: 3px;
+    padding: 6px 3px;
+  }
+
+  .ctrl-btn.sidebar,
+  .leave-btn {
+    padding: 6px 3px;
+    font-size: 0.9rem;
+  }
+
+  .video-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    padding: 6px;
+  }
+
+  .video-block {
+    min-height: 200px;
+  }
+
+  .video-block span {
+    font-size: 0.6rem;
+    padding: 1px 4px;
+  }
+}
+
+/* ===== 태블릿 (769px ~ 1024px) ===== */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .room-sidebar {
+    width: 200px;
+  }
+
+  .video-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 10px;
+  }
+
+  .users-section h3 {
+    font-size: 0.85rem;
+  }
+
+  .user-item {
+    font-size: 0.85rem;
+  }
+
+  .user-badge {
+    font-size: 0.65rem;
+  }
+}
+
+/* ===== 데스크탑 (1025px 이상) ===== */
+@media (min-width: 1025px) {
+  .room-sidebar {
+    width: 240px;
+  }
+
+  .video-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+}
+
+/* ===== 가로 모드 조정 ===== */
+@media (max-width: 768px) and (orientation: landscape) {
+  .room-sidebar {
+    width: 80px;
+  }
+
+  .video-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 6px;
+    padding: 6px;
+  }
+
+  .video-block {
+    aspect-ratio: auto;
+    min-height: 180px;
+  }
+
+  .user-list {
+    max-height: 120px;
+  }
+}
