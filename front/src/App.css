@@ -1,0 +1,176 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  min-height: 100vh;
+}
+
+/* Join Page */
+.join-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.join-card {
+  background: #16213e;
+  border-radius: 12px;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 320px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.join-card h1 {
+  text-align: center;
+  font-size: 2rem;
+  color: #4fc3f7;
+}
+
+.join-card input {
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #2a3a5c;
+  background: #0f3460;
+  color: #e0e0e0;
+  font-size: 1rem;
+  outline: none;
+}
+
+.join-card input:focus {
+  border-color: #4fc3f7;
+}
+
+.error-msg {
+  color: #ef5350;
+  font-size: 0.85rem;
+  text-align: center;
+  margin: -4px 0;
+}
+
+.join-card button,
+button {
+  padding: 12px 24px;
+  border-radius: 8px;
+  border: none;
+  background: #4fc3f7;
+  color: #1a1a2e;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+button:hover {
+  background: #81d4fa;
+}
+
+/* Video Room */
+.video-room {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.room-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: #16213e;
+  border-bottom: 1px solid #2a3a5c;
+}
+
+.room-header h2 {
+  color: #4fc3f7;
+  font-size: 1.1rem;
+}
+
+.controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.ctrl-btn {
+  background: #2a3a5c;
+  color: #e0e0e0;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+}
+
+.ctrl-btn:hover {
+  background: #3a4f7a;
+}
+
+.ctrl-btn.off {
+  background: #555;
+  color: #aaa;
+}
+
+.leave-btn {
+  background: #ef5350;
+  color: #fff;
+  padding: 8px 20px;
+}
+
+.leave-btn:hover {
+  background: #e53935;
+}
+
+/* Video Grid */
+.video-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  padding: 16px;
+  overflow-y: auto;
+  align-content: start;
+}
+
+.video-block {
+  position: relative;
+  background: #0f3460;
+  border-radius: 10px;
+  overflow: hidden;
+  aspect-ratio: 16/9;
+}
+
+.video-block video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.video-block span {
+  position: absolute;
+  bottom: 8px;
+  left: 12px;
+  font-size: 0.75rem;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.video-block.local video {
+  transform: scaleX(-1);
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #90a4ae;
+  font-size: 0.85rem;
+}

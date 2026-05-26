@@ -1,0 +1,9 @@
+node_modules/
+front/dist/
+front/.env
+sfu/.env
+*.tar.gz
+.DS_Store
+nginx/.env
+turn/.env
+.claude/
