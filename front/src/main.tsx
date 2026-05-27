@@ -6,8 +6,10 @@ import './App.css';
 function applyMobileHeight() {
   if (window.innerWidth <= 768) {
     document.documentElement.style.setProperty('--root-height', `${window.innerHeight - 50}px`);
+    document.documentElement.style.setProperty('--root-width', `${window.innerWidth - 50}px`);
   } else {
     document.documentElement.style.removeProperty('--root-height');
+    document.documentElement.style.removeProperty('--root-width');
   }
 }
 applyMobileHeight();
