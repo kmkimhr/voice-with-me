@@ -14,6 +14,7 @@ function applyMobileHeight() {
 }
 applyMobileHeight();
 window.addEventListener('resize', applyMobileHeight);
+window.scrollTo(0, 0);
 
 const rootElement = document.getElementById('root');
 if (!rootElement) throw new Error('Failed to find root element');
