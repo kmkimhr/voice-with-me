@@ -107,6 +107,7 @@ const VideoRoom: FC<VideoRoomProps> = ({ roomId, username, onLeave, onDuplicate 
   const [selectedVideoId, setSelectedVideoId] = useState<string>('');
   const [deviceSwitching, setDeviceSwitching] = useState<'audio' | 'video' | null>(null);
   const [speakingPeers, setSpeakingPeers] = useState<Set<string>>(new Set());
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const attachAnalyser = (id: string, stream: MediaStream): void => {
     if (analysersRef.current.has(id)) return;
@@ -126,6 +127,7 @@ const VideoRoom: FC<VideoRoomProps> = ({ roomId, username, onLeave, onDuplicate 
 
   // iOS Safari PWA requires getUserMedia to be called directly from a user gesture
   const handleStart = async (): Promise<void> => {
+    setIsLoading(true);
     setStartError('');
     // AudioContext는 반드시 await 이전 동기 구간에서 생성해야 autoplay 정책을 통과함
     if (!audioCtxRef.current) {
@@ -146,9 +148,13 @@ const VideoRoom: FC<VideoRoomProps> = ({ roomId, username, onLeave, onDuplicate 
       stream.getAudioTracks().forEach((t) => (t.enabled = false));
       stream.getVideoTracks().forEach((t) => (t.enabled = false));
       localStreamRef.current = stream;
+      // 4초 대기 후 video-room 진입
+      await new Promise((r) => setTimeout(r, 4000));
       setLocalStream(stream);
+      setIsLoading(false);
     } catch (e: any) {
       setStartError('카메라/마이크 접근 오류: ' + e.message);
+      setIsLoading(false);
     }
   };
 
@@ -449,12 +455,18 @@ const VideoRoom: FC<VideoRoomProps> = ({ roomId, username, onLeave, onDuplicate 
       <div className="join-page">
         <div className="join-card">
           <h1>Voice With Me</h1>
-          <p style={{ marginBottom: 16, color: '#ccc', fontSize: 14 }}>
+          <p style={{ marginBottom: 16, color: '#A2A2A4', fontSize: 14 }}>
             카메라와 마이크 접근을 허용해주세요.
           </p>
           {startError && <p className="error-msg">{startError}</p>}
-          <button onClick={handleStart}>카메라/마이크 시작</button>
-          <button onClick={onLeave} style={{ marginTop: 8, background: '#555' }}>돌아가기</button>
+          {isLoading && (
+            <div className="loading-container">
+              <div className="loading-bar"></div>
+              <p style={{ color: '#A2A2A4', fontSize: 12, margin: '8px 0 0 0' }}>연결 중...</p>
+            </div>
+          )}
+          <button onClick={handleStart} disabled={isLoading}>카메라/마이크 시작</button>
+          <button onClick={onLeave} style={{ marginTop: 8, background: '#1C1D21', color: '#DBDDE1' }} disabled={isLoading}>돌아가기</button>
         </div>
       </div>
     );
