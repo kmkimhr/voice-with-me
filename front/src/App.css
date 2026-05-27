@@ -373,6 +373,12 @@ button:hover {
   border-radius: 10px;
   overflow: hidden;
   aspect-ratio: 16/9;
+  box-shadow: inset 0 0 0 0px transparent;
+  transition: box-shadow 0.15s ease;
+}
+
+.video-block.speaking {
+  box-shadow: inset 0 0 0 3px #4caf50;
 }
 
 .video-block video {

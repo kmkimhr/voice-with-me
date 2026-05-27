@@ -56,15 +56,16 @@ function emitAsync(socket: Socket, event: string, data: object = {}): Promise<an
 interface RemoteVideoProps {
   stream: MediaStream;
   label: string;
+  speaking: boolean;
 }
 
-const RemoteVideo: FC<RemoteVideoProps> = ({ stream, label }) => {
+const RemoteVideo: FC<RemoteVideoProps> = ({ stream, label, speaking }) => {
   const ref: RefObject<HTMLVideoElement> = useRef(null);
   useEffect(() => {
     if (ref.current) ref.current.srcObject = stream;
   }, [stream]);
   return (
-    <div className="video-block">
+    <div className={`video-block${speaking ? ' speaking' : ''}`}>
       <video ref={ref} autoPlay playsInline />
       <span>{label}</span>
     </div>
@@ -90,6 +91,9 @@ const VideoRoom: FC<VideoRoomProps> = ({ roomId, username, onLeave, onDuplicate 
   const peerStreamsRef: RefObject<Record<string, PeerStream>> = useRef({});
   const micOnRef = useRef<boolean>(false);
   const camOnRef = useRef<boolean>(false);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const analysersRef = useRef<Map<string, AnalyserNode>>(new Map());
+
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [peerStreams, setPeerStreams] = useState<Record<string, PeerStream>>({});
   const [status, setStatus] = useState<string>('');
@@ -102,6 +106,26 @@ const VideoRoom: FC<VideoRoomProps> = ({ roomId, username, onLeave, onDuplicate 
   const [selectedAudioId, setSelectedAudioId] = useState<string>('');
   const [selectedVideoId, setSelectedVideoId] = useState<string>('');
   const [deviceSwitching, setDeviceSwitching] = useState<'audio' | 'video' | null>(null);
+  const [speakingPeers, setSpeakingPeers] = useState<Set<string>>(new Set());
+
+  const attachAnalyser = (id: string, stream: MediaStream): void => {
+    if (analysersRef.current.has(id)) return;
+    if (stream.getAudioTracks().length === 0) return;
+    if (!audioCtxRef.current) {
+      audioCtxRef.current = new AudioContext();
+    }
+    const ctx = audioCtxRef.current;
+    if (ctx.state === 'suspended') ctx.resume();
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 256;
+    analyser.smoothingTimeConstant = 0.5;
+    ctx.createMediaStreamSource(stream).connect(analyser);
+    analysersRef.current.set(id, analyser);
+  };
+
+  const detachAnalyser = (id: string): void => {
+    analysersRef.current.delete(id);
+  };
 
   // iOS Safari PWA requires getUserMedia to be called directly from a user gesture
   const handleStart = async (): Promise<void> => {
@@ -131,6 +155,32 @@ const VideoRoom: FC<VideoRoomProps> = ({ roomId, username, onLeave, onDuplicate 
     if (localVideoRef.current && localStream) {
       localVideoRef.current.srcObject = localStream;
     }
+  }, [localStream]);
+
+  // 로컬 스트림 analyser 등록
+  useEffect(() => {
+    if (!localStream) return;
+    attachAnalyser('local', localStream);
+  }, [localStream]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 발화 감지 폴링 (100ms 간격)
+  useEffect(() => {
+    if (!localStream) return;
+    const buf = new Uint8Array(256);
+    const intervalId = setInterval(() => {
+      const next = new Set<string>();
+      analysersRef.current.forEach((analyser, peerId) => {
+        analyser.getByteTimeDomainData(buf);
+        let sum = 0;
+        for (let i = 0; i < buf.length; i++) {
+          const v = (buf[i] - 128) / 128;
+          sum += v * v;
+        }
+        if (Math.sqrt(sum / buf.length) > 0.01) next.add(peerId);
+      });
+      setSpeakingPeers(next);
+    }, 100);
+    return () => clearInterval(intervalId);
   }, [localStream]);
 
   useEffect(() => {
@@ -166,6 +216,9 @@ const VideoRoom: FC<VideoRoomProps> = ({ roomId, username, onLeave, onDuplicate 
         peerStreamsRef.current[peerId] = { stream: new MediaStream(), username: peerUsername };
       }
       peerStreamsRef.current[peerId].stream.addTrack(consumer.track);
+      if (consumer.kind === 'audio') {
+        attachAnalyser(peerId, peerStreamsRef.current[peerId].stream);
+      }
       if (!destroyed) setPeerStreams({ ...peerStreamsRef.current });
     };
 
@@ -253,6 +306,7 @@ const VideoRoom: FC<VideoRoomProps> = ({ roomId, username, onLeave, onDuplicate 
       });
 
       socket.on('peerLeft', ({ peerId }) => {
+        detachAnalyser(peerId);
         delete peerStreamsRef.current[peerId];
         if (!destroyed) setPeerStreams({ ...peerStreamsRef.current });
       });
@@ -275,8 +329,11 @@ const VideoRoom: FC<VideoRoomProps> = ({ roomId, username, onLeave, onDuplicate 
       socketRef.current?.disconnect();
       localStreamRef.current?.getTracks().forEach((t) => t.stop());
       peerStreamsRef.current = {};
+      analysersRef.current.clear();
+      audioCtxRef.current?.close();
+      audioCtxRef.current = null;
     };
-  }, [localStream, roomId, username, onDuplicate]);
+  }, [localStream, roomId, username, onDuplicate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleLeave = (): void => {
     sendTransportRef.current?.close();
@@ -343,6 +400,9 @@ const VideoRoom: FC<VideoRoomProps> = ({ roomId, username, onLeave, onDuplicate 
       // replaceTrack이 producer의 _paused 기준으로 enabled를 덮어쓰므로, 호출 후 토글 상태로 다시 맞춤
       if (audioProducerRef.current) await audioProducerRef.current.replaceTrack({ track: newTrack });
       newTrack.enabled = micOnRef.current;
+      // 새 트랙으로 analyser 재연결
+      detachAnalyser('local');
+      if (localStreamRef.current) attachAnalyser('local', localStreamRef.current);
     } catch (e) {
       console.error('switchAudioDevice error', e);
     } finally {
@@ -399,6 +459,8 @@ const VideoRoom: FC<VideoRoomProps> = ({ roomId, username, onLeave, onDuplicate 
     );
   }
 
+  const localSpeaking = speakingPeers.has('local') && micOn;
+
   return (
     <div className="video-room">
       <div className="room-sidebar">
@@ -441,12 +503,17 @@ const VideoRoom: FC<VideoRoomProps> = ({ roomId, username, onLeave, onDuplicate 
 
       <div className="room-main">
         <div className="video-grid">
-          <div className="video-block local">
+          <div className={`video-block local${localSpeaking ? ' speaking' : ''}`}>
             <video ref={localVideoRef} autoPlay muted playsInline />
             <span>{username} (나) {!micOn && '🔇'}{!camOn && '🚫'}</span>
           </div>
           {Object.entries(peerStreams).map(([peerId, { stream, username: peerName }]) => (
-            <RemoteVideo key={peerId} stream={stream} label={peerName} />
+            <RemoteVideo
+              key={peerId}
+              stream={stream}
+              label={peerName}
+              speaking={speakingPeers.has(peerId)}
+            />
           ))}
         </div>
       </div>

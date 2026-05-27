@@ -4,6 +4,68 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Voice With Me</title>
+    <script>
+      (function () {
+        var ua = navigator.userAgent || '';
+        var isKakao = /KAKAOTALK/i.test(ua);
+        if (!isKakao) return;
+
+        var isAndroid = /Android/i.test(ua);
+        var isIOS = /iPhone|iPad|iPod/i.test(ua);
+
+        if (isAndroid) {
+          // intent URL로 크롬(또는 기본 브라우저) 강제 오픈
+          var href = location.href;
+          var intentUrl =
+            'intent://' +
+            href.replace(/https?:\/\//, '') +
+            '#Intent;scheme=https;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;end';
+          location.replace(intentUrl);
+          return;
+        }
+
+        if (isIOS) {
+          // iOS는 자동 오픈 불가 — 안내 오버레이 표시
+          document.addEventListener('DOMContentLoaded', function () {
+            var overlay = document.createElement('div');
+            overlay.style.cssText = [
+              'position:fixed', 'inset:0', 'z-index:99999',
+              'background:rgba(0,0,0,0.85)',
+              'display:flex', 'flex-direction:column',
+              'align-items:center', 'justify-content:center',
+              'padding:24px', 'box-sizing:border-box',
+            ].join(';');
+
+            var box = document.createElement('div');
+            box.style.cssText = [
+              'background:#fff', 'border-radius:16px',
+              'padding:28px 24px', 'max-width:320px', 'width:100%',
+              'text-align:center', 'font-family:sans-serif',
+            ].join(';');
+
+            box.innerHTML = [
+              '<p style="font-size:15px;font-weight:700;margin:0 0 12px">카카오톡 인앱 브라우저에서는</p>',
+              '<p style="font-size:15px;font-weight:700;margin:0 0 20px">정상 동작하지 않을 수 있어요</p>',
+              '<p style="font-size:13px;color:#555;line-height:1.6;margin:0 0 20px">',
+              '화면 우측 하단의 <b>···</b> 버튼을 누르고<br>',
+              '<b>Safari로 열기</b>를 선택해 주세요.',
+              '</p>',
+              '<button id="kakao-overlay-close" style="',
+              'border:none;background:#FEE500;border-radius:8px;',
+              'padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;width:100%',
+              '">확인</button>',
+            ].join('');
+
+            overlay.appendChild(box);
+            document.body.appendChild(overlay);
+
+            document.getElementById('kakao-overlay-close').addEventListener('click', function () {
+              overlay.remove();
+            });
+          });
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
