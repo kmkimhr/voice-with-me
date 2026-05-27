@@ -544,25 +544,27 @@ button:disabled {
   }
 
   .controls-section {
-    gap: 4px;
+    gap: 8px;
     padding: 8px 6px 28px;
     flex-direction: column;
   }
 
   .controls-row {
-    gap: 4px;
+    flex-direction: column;
+    gap: 8px;
   }
 
   .ctrl-btn.sidebar {
-    padding: 8px 4px;
+    width: 100%;
+    padding: 12px 4px;
     font-size: 1rem;
     border-radius: 6px;
     min-width: 0;
   }
 
   .leave-btn {
-    padding: 8px 4px;
-    font-size: 0.9rem;
+    padding: 12px 4px;
+    font-size: 1rem;
     border-radius: 6px;
   }
 
@@ -687,23 +689,25 @@ button:disabled {
   }
 
   .controls-section {
-    gap: 3px;
+    gap: 8px;
     padding: 6px 4px 24px;
     flex-direction: column;
   }
 
   .controls-row {
-    gap: 3px;
+    flex-direction: column;
+    gap: 8px;
   }
 
   .ctrl-btn.sidebar {
-    padding: 6px 3px;
+    width: 100%;
+    padding: 12px 3px;
     font-size: 0.9rem;
   }
 
   .leave-btn {
-    padding: 6px 3px;
-    font-size: 0.8rem;
+    padding: 12px 3px;
+    font-size: 0.9rem;
   }
 
   .video-grid {
