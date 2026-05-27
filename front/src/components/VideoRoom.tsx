@@ -111,11 +111,8 @@ const VideoRoom: FC<VideoRoomProps> = ({ roomId, username, onLeave, onDuplicate 
   const attachAnalyser = (id: string, stream: MediaStream): void => {
     if (analysersRef.current.has(id)) return;
     if (stream.getAudioTracks().length === 0) return;
-    if (!audioCtxRef.current) {
-      audioCtxRef.current = new AudioContext();
-    }
     const ctx = audioCtxRef.current;
-    if (ctx.state === 'suspended') ctx.resume();
+    if (!ctx) return;
     const analyser = ctx.createAnalyser();
     analyser.fftSize = 256;
     analyser.smoothingTimeConstant = 0.5;
@@ -130,6 +127,10 @@ const VideoRoom: FC<VideoRoomProps> = ({ roomId, username, onLeave, onDuplicate 
   // iOS Safari PWA requires getUserMedia to be called directly from a user gesture
   const handleStart = async (): Promise<void> => {
     setStartError('');
+    // AudioContext는 반드시 await 이전 동기 구간에서 생성해야 autoplay 정책을 통과함
+    if (!audioCtxRef.current) {
+      audioCtxRef.current = new AudioContext();
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
