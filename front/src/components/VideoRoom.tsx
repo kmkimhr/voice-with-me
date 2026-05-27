@@ -90,8 +90,10 @@ const VideoRoom: FC<VideoRoomProps> = ({ roomId, username, onLeave, onDuplicate 
   const peerStreamsRef: RefObject<Record<string, PeerStream>> = useRef({});
   const micOnRef = useRef<boolean>(false);
   const camOnRef = useRef<boolean>(false);
+  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [peerStreams, setPeerStreams] = useState<Record<string, PeerStream>>({});
-  const [status, setStatus] = useState<string>('연결 중...');
+  const [status, setStatus] = useState<string>('');
+  const [startError, setStartError] = useState<string>('');
   const [micOn, setMicOn] = useState<boolean>(false);
   const [camOn, setCamOn] = useState<boolean>(false);
   const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
@@ -101,8 +103,38 @@ const VideoRoom: FC<VideoRoomProps> = ({ roomId, username, onLeave, onDuplicate 
   const [selectedVideoId, setSelectedVideoId] = useState<string>('');
   const [deviceSwitching, setDeviceSwitching] = useState<'audio' | 'video' | null>(null);
 
+  // iOS Safari PWA requires getUserMedia to be called directly from a user gesture
+  const handleStart = async (): Promise<void> => {
+    setStartError('');
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: {
+          echoCancellation: { ideal: true },
+          noiseSuppression: { ideal: true },
+          autoGainControl: { ideal: true },
+          sampleRate: { ideal: 48000 },
+          channelCount: { ideal: 1 },
+          latency: { ideal: 0.01 },
+        },
+      });
+      stream.getAudioTracks().forEach((t) => (t.enabled = false));
+      stream.getVideoTracks().forEach((t) => (t.enabled = false));
+      localStreamRef.current = stream;
+      setLocalStream(stream);
+    } catch (e: any) {
+      setStartError('카메라/마이크 접근 오류: ' + e.message);
+    }
+  };
+
   useEffect(() => {
-    let localStream: MediaStream | null = null;
+    if (localVideoRef.current && localStream) {
+      localVideoRef.current.srcObject = localStream;
+    }
+  }, [localStream]);
+
+  useEffect(() => {
+    if (!localStream) return;
     let destroyed = false;
 
     const consumeProducer = async (
@@ -138,26 +170,7 @@ const VideoRoom: FC<VideoRoomProps> = ({ roomId, username, onLeave, onDuplicate 
     };
 
     const init = async (): Promise<void> => {
-      localStream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: {
-          echoCancellation: { ideal: true },
-          noiseSuppression: { ideal: true },
-          autoGainControl: { ideal: true },
-          sampleRate: { ideal: 48000 },
-          channelCount: { ideal: 1 },
-          latency: { ideal: 0.01 },
-        },
-      });
-      if (destroyed) {
-        localStream.getTracks().forEach((t) => t.stop());
-        return;
-      }
-      localStreamRef.current = localStream;
-      localStream.getAudioTracks().forEach((t) => (t.enabled = false));
-      localStream.getVideoTracks().forEach((t) => (t.enabled = false));
-      if (localVideoRef.current) localVideoRef.current.srcObject = localStream;
-
+      setStatus('연결 중...');
       const socket: Socket = io({ path: '/socket.io' });
       socketRef.current = socket;
 
@@ -214,7 +227,7 @@ const VideoRoom: FC<VideoRoomProps> = ({ roomId, username, onLeave, onDuplicate 
             .catch(errback);
         });
 
-        for (const track of localStream!.getTracks()) {
+        for (const track of localStreamRef.current!.getTracks()) {
           const producer = await sendTransport.produce({ track });
           if (track.kind === 'audio') audioProducerRef.current = producer;
           else videoProducerRef.current = producer;
@@ -260,10 +273,10 @@ const VideoRoom: FC<VideoRoomProps> = ({ roomId, username, onLeave, onDuplicate 
       sendTransportRef.current?.close();
       recvTransportRef.current?.close();
       socketRef.current?.disconnect();
-      localStream?.getTracks().forEach((t) => t.stop());
+      localStreamRef.current?.getTracks().forEach((t) => t.stop());
       peerStreamsRef.current = {};
     };
-  }, [roomId, username, onDuplicate]);
+  }, [localStream, roomId, username, onDuplicate]);
 
   const handleLeave = (): void => {
     sendTransportRef.current?.close();
@@ -369,6 +382,22 @@ const VideoRoom: FC<VideoRoomProps> = ({ roomId, username, onLeave, onDuplicate 
       setDeviceSwitching(null);
     }
   };
+
+  if (!localStream) {
+    return (
+      <div className="join-page">
+        <div className="join-card">
+          <h1>Voice With Me</h1>
+          <p style={{ marginBottom: 16, color: '#ccc', fontSize: 14 }}>
+            카메라와 마이크 접근을 허용해주세요.
+          </p>
+          {startError && <p className="error-msg">{startError}</p>}
+          <button onClick={handleStart}>카메라/마이크 시작</button>
+          <button onClick={onLeave} style={{ marginTop: 8, background: '#555' }}>돌아가기</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="video-room">
